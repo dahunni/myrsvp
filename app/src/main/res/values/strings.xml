@@ -1,20 +1,114 @@
 <resources>
     <string name="app_name">my-rsvp</string>
 
+    <!-- Durations -->
+    <string name="duration_hours">%1$d h %2$d min</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_under_minute">&lt; 1 min</string>
+
     <!-- Reader -->
     <string name="reader_wpm">%1$d wpm</string>
     <string name="reader_paused">Paused</string>
-    <string name="reader_percent">%1$d %%</string>
-    <string name="reader_percent_chapter">%1$d %% · Chapter %2$d of %3$d</string>
-    <string name="reader_time_left_hours">%1$d h %2$d min left</string>
-    <string name="reader_time_left_minutes">%1$d min left</string>
-    <string name="reader_time_left_under_minute">&lt; 1 min left</string>
-    <string name="reader_finished">Finished</string>
+    <string name="reader_percent">%1$d\u00A0%%</string>
+    <string name="reader_percent_chapter">%1$d\u00A0%% · Chapter %2$d of %3$d</string>
+    <string name="reader_time_left">%1$s left</string>
+    <string name="reader_opening">Opening…</string>
+    <string name="reader_open_failed">This book could not be opened.</string>
 
-    <!-- Key hints (reader) -->
+    <!-- Key hints -->
     <string name="hint_speed">▲▼ Speed</string>
     <string name="hint_pause">OK Pause</string>
     <string name="hint_sentence">◀▶ Sentence</string>
     <string name="hint_resume">OK Resume</string>
     <string name="hint_page">▲▼ Page</string>
+    <string name="hint_menu">☰ Menu</string>
+    <string name="hint_move">▲▼ Move</string>
+    <string name="hint_open">OK Open</string>
+    <string name="hint_select">OK Select</string>
+    <string name="hint_back">↩ Back</string>
+    <string name="hint_change">◀▶ Change</string>
+    <string name="hint_scroll">▲▼ Scroll</string>
+
+    <!-- Library -->
+    <string name="library_title">Library</string>
+    <plurals name="library_count">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <string name="library_add_books">Add books</string>
+    <string name="library_importing">Importing %1$d of %2$d…</string>
+    <string name="library_done">Done</string>
+    <plurals name="library_imported">
+        <item quantity="one">%d book added</item>
+        <item quantity="other">%d books added</item>
+    </plurals>
+    <string name="library_import_failed">%1$s: %2$s</string>
+    <string name="import_error_drm">copy-protected (DRM), can\'t be read</string>
+    <string name="import_error_not_epub">not a valid EPUB</string>
+    <string name="import_error_empty">no readable text found</string>
+    <string name="import_error_unsupported">only EPUB and TXT are supported</string>
+    <string name="import_error_unreadable">could not be read</string>
+    <string name="library_menu_title">Library</string>
+    <string name="library_menu_remove">Remove “%1$s”</string>
+    <string name="library_menu_remove_confirm">Press OK again to remove</string>
+
+    <!-- Menu -->
+    <string name="menu_title">Menu</string>
+    <string name="menu_subtitle">%1$s · %2$d\u00A0%%</string>
+    <string name="menu_continue">Continue reading</string>
+    <string name="menu_chapters">Chapters</string>
+    <string name="menu_chapters_value">%1$d of %2$d</string>
+    <string name="menu_chapters_none">None</string>
+    <string name="menu_book_info">Book info</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_start_over">Start from beginning</string>
+    <string name="menu_library">Library</string>
+
+    <!-- Chapters -->
+    <string name="chapters_title">Chapters</string>
+
+    <!-- Book info -->
+    <string name="info_title">Book info</string>
+    <string name="info_book_title">Title</string>
+    <string name="info_author">Author</string>
+    <string name="info_year">Year</string>
+    <string name="info_language">Language</string>
+    <string name="info_words">Words</string>
+    <string name="info_reading_time">Reading time</string>
+    <string name="info_reading_time_value">%1$s at %2$d wpm</string>
+    <string name="info_time_left">Time left</string>
+    <string name="info_progress">Progress</string>
+    <string name="info_chapters">Chapters</string>
+    <string name="info_unknown">—</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_speed">Speed</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_focus">Focus letter</string>
+    <string name="settings_focus_red">Red</string>
+    <string name="settings_focus_gold">Gold</string>
+    <string name="settings_focus_blue">Blue</string>
+    <string name="settings_word_size">Word size</string>
+    <string name="settings_size_small">Small</string>
+    <string name="settings_size_medium">Medium</string>
+    <string name="settings_size_large">Large</string>
+    <string name="settings_pause_at_sentences">Pause at sentences</string>
+    <string name="settings_ramp_up">Ramp-up on start</string>
+    <string name="settings_guide_lines">Guide lines</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off</string>
+    <string name="settings_value_focused">◀  %1$s  ▶</string>
+    <string name="settings_about">About &amp; licenses</string>
+    <string name="settings_version">Version</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+
+    <!-- Key test (hidden: Settings → Version, press OK 5×) -->
+    <string name="keys_title">Key test</string>
+    <string name="keys_prompt">Press any key. BACK leaves this screen.</string>
+    <string name="keys_none">No key yet</string>
 </resources>

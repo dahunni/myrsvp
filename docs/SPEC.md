@@ -14,7 +14,8 @@ and pocket-reader (laurensvanhelvoort/pocket-reader). Credit both in the app's A
 | Book info| Title, author, year (if known), word count, reading time at current speed, progress |
 | Settings | Speed · Theme (Dark/Light) · Focus letter (Red/Gold/Blue) · Word size (S/M/L) · Pause at sentences · Ramp-up · Guide lines |
 
-App starts in the Library; if a book was open last time, offer "Continue" as the first focused row.
+App starts in the Library; the book read last is the first row and has the focus, so OK continues it.
+☰ in the Library (or a long press on a book) opens a small menu: Add books · Settings · Remove book.
 
 ## 2. RSVP engine (`engine/`, pure Kotlin)
 **Focus letter (ORP) index** by word length (letters only, ignore surrounding punctuation):
@@ -62,6 +63,12 @@ Show a speed change by briefly highlighting the wpm in the header (never over th
 ## 4. Books
 **Import:** "Add books" opens the system file picker (EPUB, TXT; PDF later, optional). Multiple files allowed.
 Convert on import (background coroutine + progress), then store only the converted file.
+Project Gutenberg files: their license header/footer is skipped (TXT markers, EPUB `pg-header`/`pg-footer`),
+TXT title/author come from the `Title:`/`Author:` header lines, and their EPUB `dc:date` (ebook date) is not a year.
+Images are dropped, except single-letter drop caps (`<img alt="N">`), whose letter is kept.
+A run of chapter lines directly after each other is a table of contents, not chapters.
+
+Nothing goes to cloud backup (`data_extraction_rules.xml`); a direct device-to-device transfer may copy it.
 
 **EPUB:** zip → `META-INF/container.xml` → OPF → spine order → each XHTML to text with jsoup
 (keep paragraph breaks, `<h1–h3>` become chapter markers, drop images/tables/footnote markers).

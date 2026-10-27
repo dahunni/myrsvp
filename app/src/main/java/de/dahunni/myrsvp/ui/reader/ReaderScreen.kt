@@ -39,8 +39,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,10 +71,14 @@ import de.dahunni.myrsvp.engine.ReadingText
 import de.dahunni.myrsvp.input.ReaderAction
 import de.dahunni.myrsvp.input.ReaderKeyInterpreter
 import de.dahunni.myrsvp.input.hasKeypad
+import de.dahunni.myrsvp.data.Settings
+import de.dahunni.myrsvp.ui.ReaderSession
+import de.dahunni.myrsvp.ui.theme.HintBar
+import de.dahunni.myrsvp.ui.theme.MaxContentWidth
 import de.dahunni.myrsvp.ui.theme.RsvpTheme
+import de.dahunni.myrsvp.ui.theme.durationText
 import kotlinx.coroutines.delay
 
-private val MaxContentWidth = 480.dp
 /** Keeps the paused text off the header and footer. */
 private val PausedEdgeGap = 12.dp
 /** Speed change: the header's wpm label pops into a pill, holds, then settles back. */
@@ -86,24 +88,25 @@ private const val SPEED_POP_OUT_MS = 300
 private const val SPEED_POP_SCALE = 0.15f
 private val SpeedPillPadding = DpSize(7.dp, 3.dp)
 
-/** Only position and speed survive a configuration change; playback restarts paused. */
-private val PlayerStateSaver = listSaver<PlayerState, Int>(
-    save = { listOf(it.index, it.wpm) },
-    restore = { PlayerState(index = it[0], wpm = it[1]) },
-)
-
-/** Reader screen: one word at a time while playing, sentence context while paused (docs/DESIGN.md). */
+/**
+ * Reader screen: one word at a time while playing, a page of text while paused (docs/DESIGN.md).
+ * The playback state lives in [session], so it survives the menu and settings screens.
+ */
 @Composable
 fun ReaderScreen(
-    text: ReadingText,
+    session: ReaderSession,
     title: String,
-    settings: PlayerSettings = PlayerSettings(),
-    showGuides: Boolean = true,
-    onOpenMenu: () -> Unit = {},
+    settings: Settings,
+    onOpenMenu: () -> Unit,
+    onSpeedChange: (wpm: Int) -> Unit,
+    onSaveProgress: () -> Unit,
 ) {
     val colors = RsvpTheme.colors
-    val player = remember(text, settings) { Player(text, settings) }
-    var state by rememberSaveable(stateSaver = PlayerStateSaver) { mutableStateOf(PlayerState()) }
+    val text = session.book.text
+    val playerSettings = PlayerSettings(rampUp = settings.rampUp, pauseAtSentences = settings.pauseAtSentences)
+    val player = remember(text, playerSettings) { Player(text, playerSettings) }
+    var state by session::state
+    val showGuides = settings.guideLines
     /** The piece of a split long word currently on screen, or null for the whole word. */
     var shownChunk by remember { mutableStateOf<String?>(null) }
     var speedChanges by remember { mutableIntStateOf(0) }
@@ -115,20 +118,31 @@ fun ReaderScreen(
 
     fun perform(action: ReaderAction) {
         state = when (action) {
-            ReaderAction.SpeedUp -> player.faster(state).also { speedChanges++ }
-            ReaderAction.SpeedDown -> player.slower(state).also { speedChanges++ }
+            ReaderAction.SpeedUp -> player.faster(state).also { speedChanges++; onSpeedChange(it.wpm) }
+            ReaderAction.SpeedDown -> player.slower(state).also { speedChanges++; onSpeedChange(it.wpm) }
             ReaderAction.PageUp -> pages.value?.let { player.jumpTo(state, it.previousPageStart(state.index)) } ?: state
             ReaderAction.PageDown -> pages.value?.page(state.index)?.nextPageStart?.let { player.jumpTo(state, it) } ?: state
             ReaderAction.PlayPause -> player.togglePlay(state)
             ReaderAction.SentenceBack -> player.back(state, SystemClock.uptimeMillis())
             ReaderAction.SentenceForward -> player.forward(state)
             is ReaderAction.JumpToPercent -> player.jumpToPercent(state, action.percent)
-            ReaderAction.OpenMenu -> state.also { onOpenMenu() }
+            ReaderAction.OpenMenu -> player.pauseNow(state).also { onOpenMenu() }
         }
     }
 
     BackHandler(enabled = state.playing) { state = player.pause(state) }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { state = player.pauseNow(state) }
+
+    // The speed is global: take it over from the settings when the reader (re)appears.
+    LaunchedEffect(Unit) { state = state.copy(wpm = settings.wpm) }
+    // Save the position whenever the reader stands still, and when it is left.
+    LaunchedEffect(state.playing, state.index) { if (!state.playing) onSaveProgress() }
+    DisposableEffect(Unit) {
+        onDispose {
+            state = player.pauseNow(state)
+            onSaveProgress()
+        }
+    }
 
     val view = LocalView.current
     DisposableEffect(state.playing) {
@@ -262,27 +276,17 @@ private fun Footer(text: ReadingText, state: PlayerState, showHints: Boolean) {
                 stringResource(R.string.reader_percent, percent)
             }
             Text(left, style = type.meta, color = colors.textMuted)
-            val right = if (state.playing) timeLeft(text.remainingMs(state.index, state.wpm))
+            val right = if (state.playing) stringResource(R.string.reader_time_left, durationText(text.remainingMs(state.index, state.wpm)))
             else stringResource(R.string.reader_wpm, state.wpm)
             Text(right, style = type.meta, color = colors.textMuted)
         }
         if (showHints) {
             if (state.playing) {
-                HintBar(R.string.hint_speed, R.string.hint_pause, R.string.hint_sentence)
+                HintBar(listOf(stringResource(R.string.hint_speed), stringResource(R.string.hint_pause), stringResource(R.string.hint_sentence)))
             } else {
-                HintBar(R.string.hint_resume, R.string.hint_page, R.string.hint_sentence)
+                HintBar(listOf(stringResource(R.string.hint_resume), stringResource(R.string.hint_page), stringResource(R.string.hint_menu)))
             }
         }
-    }
-}
-
-@Composable
-private fun timeLeft(ms: Long): String {
-    val minutes = (ms / 60_000).toInt()
-    return when {
-        minutes >= 60 -> stringResource(R.string.reader_time_left_hours, minutes / 60, minutes % 60)
-        minutes >= 1 -> stringResource(R.string.reader_time_left_minutes, minutes)
-        else -> stringResource(R.string.reader_time_left_under_minute)
     }
 }
 
@@ -306,20 +310,6 @@ private fun ProgressBar(progress: Float) {
                 }
             },
     )
-}
-
-@Composable
-private fun HintBar(vararg hints: Int) {
-    val colors = RsvpTheme.colors
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .drawBehind { drawLine(colors.divider, Offset(0f, 0f), Offset(size.width, 0f), 0.5.dp.toPx()) }
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        hints.forEach { Text(stringResource(it), style = RsvpTheme.type.hint, color = colors.textMuted) }
-    }
 }
 
 /**

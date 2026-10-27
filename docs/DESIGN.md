@@ -70,21 +70,29 @@ Focus-letter accent (setting "Focus letter"), also used for the focus outline in
   lines, as many complete lines as fit — one **page**. 12 dp gap to header and footer.
 - ▲▼ page: ▼ starts the next page with the first sentence that wasn't fully visible (nothing is skipped),
   ▲ goes back to the page that ends right before the current sentence.
-- Footer: progress + "12 % · Chapter 1 of 61" left, wpm right; hints "OK Resume · ▲▼ Page · ◀▶ Sentence".
+- Footer: progress + "12 % · Chapter 1 of 61" left, wpm right; hints "OK Resume · ▲▼ Page · ☰ Menu".
 
 ## Lists (Library, Menu, Chapters, Settings)
 - Padding: top 18, sides 12, bottom 14 dp. Screen title with 10 dp bottom spacing (sides 4 dp extra inset).
 - Rows: full width, padding 8 × 9 dp (Library) / 10 × 9 dp (Menu, Settings), radius 7 dp, 3 dp gap.
-- **Focused row:** background rowFocused + 1.5 dp outline in the accent color, title weight 600.
-  This is the only focus indicator and must be clearly visible on the D-pad.
+- **Focused row:** background rowFocused + 1.5 dp outline in the accent color (title weight 600 only if the UI
+  font gets more weights). This is the only focus indicator and must be clearly visible on the D-pad.
+- Every screen starts with a focused row, also in touch mode, so the first D-pad press already moves or selects.
+  Coming back from a sub-screen focuses the row it was opened from.
 - Library row: title (rowTitle 13 sp) → author (meta) → progress bar 2.5 dp + % right (min width 28 dp).
   Finished books: 50 % opacity, "Done" instead of %, at the bottom of the list.
 - "Add books" row: transparent, 1 dp dashed border (dashedBorder), radius 7 dp, plus icon + label (11 sp, #BDBDBD dark).
-- Menu row: label left, optional value right (meta), e.g. "Chapters — 1 of 61".
+- Menu row: label left, optional value right (rowValue 11 sp, max 150 dp), e.g. "Chapters — 1 of 61".
+  Menu header: "Pride and Prejudice · 12 %" (meta) above the title.
+- Library menu (☰ in the library, or long-press a book): Add books · Settings · Remove "Title"; Remove asks
+  "Press OK again to remove" first.
+- Chapters: chapter title left, its position in % right; the current chapter is focused.
+- Book info: read-only label/value rows (still focusable, so ▲▼ scroll).
+- Settings ends with "About & licenses" and "Version" (OK 5× on Version opens the hidden key test).
 - Settings row: label left, value right; the focused row shows "◀  350 wpm  ▶" in text color, others the
   plain value in textMuted.
 - Key-hint bar at the bottom like the reader: Library "▲▼ Move · OK Open · ☰ Menu", Menu "▲▼ Move · OK Select · ↩ Back",
-  Settings "▲▼ Move · ◀▶ Change · ↩ Back".
+  Settings "▲▼ Move · ◀▶ Change · ↩ Back", Book info / About "▲▼ Scroll · ↩ Back".
 
 ## Motion
 None for words (instant swap, no fade). Lists: no animations except a 150 ms focus-background change.

@@ -28,8 +28,9 @@ object KeyCodes {
     val UP = setOf(KeyEvent.KEYCODE_DPAD_UP)
     val DOWN = setOf(KeyEvent.KEYCODE_DPAD_DOWN)
     val OK = setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER)
-    val SENTENCE_BACK = setOf(KeyEvent.KEYCODE_DPAD_LEFT)
-    val SENTENCE_FORWARD = setOf(KeyEvent.KEYCODE_DPAD_RIGHT)
+    /** Reader: sentence back / forward. Lists: change a setting's value. */
+    val LEFT = setOf(KeyEvent.KEYCODE_DPAD_LEFT)
+    val RIGHT = setOf(KeyEvent.KEYCODE_DPAD_RIGHT)
     val MENU = setOf(KeyEvent.KEYCODE_MENU)
 
     /** Key code → digit 1–9 (top-row and numpad digits). */
@@ -45,7 +46,7 @@ class ReaderKeyInterpreter(private val longPressMs: Long) {
     private var okLongPressFired = false
 
     fun handles(keyCode: Int): Boolean = keyCode in KeyCodes.UP || keyCode in KeyCodes.DOWN ||
-        keyCode in KeyCodes.OK || keyCode in KeyCodes.SENTENCE_BACK || keyCode in KeyCodes.SENTENCE_FORWARD ||
+        keyCode in KeyCodes.OK || keyCode in KeyCodes.LEFT || keyCode in KeyCodes.RIGHT ||
         keyCode in KeyCodes.MENU || keyCode in KeyCodes.DIGITS
 
     /**
@@ -62,8 +63,8 @@ class ReaderKeyInterpreter(private val longPressMs: Long) {
         return when (keyCode) {
             in KeyCodes.UP -> ReaderAction.PageUp
             in KeyCodes.DOWN -> ReaderAction.PageDown
-            in KeyCodes.SENTENCE_BACK -> ReaderAction.SentenceBack
-            in KeyCodes.SENTENCE_FORWARD -> ReaderAction.SentenceForward
+            in KeyCodes.LEFT -> ReaderAction.SentenceBack
+            in KeyCodes.RIGHT -> ReaderAction.SentenceForward
             in KeyCodes.MENU -> ReaderAction.OpenMenu
             in KeyCodes.DIGITS -> ReaderAction.JumpToPercent(KeyCodes.DIGITS.getValue(keyCode) * 10)
             else -> null

@@ -34,6 +34,8 @@ data class RsvpTypography(
     val screenTitle: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 17.sp, fontWeight = FontWeight.SemiBold),
     val bookTitle: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
     val rowTitle: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 13.sp, fontWeight = FontWeight.Medium),
+    /** Value on the right of Menu and Settings rows. */
+    val rowValue: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 11.sp, fontWeight = FontWeight.Medium),
     val meta: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 10.sp),
     val wpm: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 11.sp, fontWeight = FontWeight.Medium),
     val hint: TextStyle = TextStyle(fontFamily = UiFont, fontSize = 9.5.sp),
