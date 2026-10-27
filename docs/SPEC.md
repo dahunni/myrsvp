@@ -63,6 +63,11 @@ long-press = what holding OK does.
 **Button rule:** the whole app is 100 % usable with keys alone. Touch only ever adds a second way to do
 something a key already does; nothing is touch-only. Holding OK replaces ☰ on devices without a menu key.
 
+**Key hints are buttons:** every key named in the hint bar ("▲", "▼", "OK", "◀", "▶", "☰", "↩") can be
+tapped and does exactly what pressing that key does (it is sent as that key to whatever has the focus;
+↩ goes through the system back). A hint with a single key ("OK Pause", "↩ Back") is tappable as a whole.
+Hint buttons never take the D-pad focus.
+
 Show a speed change by briefly highlighting the wpm in the header (never over the word). Keep the screen on only while playing.
 
 ## 4. Books
@@ -102,5 +107,17 @@ Re-importing a book with the same title + author replaces it and keeps the readi
 **Progress per book** (DataStore): byte offset of the current sentence start, last-opened time,
 finished flag (set when the end is reached). Library shows % and "Done".
 
-## 5. Non-goals (v1)
+## 5. Updates (`update/`)
+GitHub releases of `dahunni/myrsvp` (Gradle property `updateRepository` for forks) are the update source.
+- Automatic check at start, at most every 6 hours (Settings: "Check for updates automatically", default on),
+  plus "Check for updates" in Settings, which shows the status ("Up to date", "1.3.0 available", "No connection").
+- A newer release (by version; drafts and pre-releases ignored) found by the automatic check is offered once,
+  when the user is in the Library: the Update screen with Download and install · Later · Skip this version,
+  then "What's new" (the release notes as plain lines, D-pad scrollable).
+- The APK attached to the release is downloaded into the cache, checked against GitHub's SHA-256 digest,
+  and handed to Android's installer (first time: Android asks to allow installs from this app).
+  Android only installs it if it is signed with the same key as the installed app.
+- This is the app's only network access.
+
+## 6. Non-goals (v1)
 Images, tables, footnotes, DRM, cloud sync, accounts, text-to-speech, highlights/notes.

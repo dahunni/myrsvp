@@ -14,3 +14,15 @@
 .cxx
 local.properties
 _to_delete/
+
+# Android Studio
+/.idea/
+
+# Release signing: never commit keys (see docs/RELEASE.md)
+keystore.properties
+*.jks
+*.keystore
+
+# Build outputs
+*.apk
+*.aab

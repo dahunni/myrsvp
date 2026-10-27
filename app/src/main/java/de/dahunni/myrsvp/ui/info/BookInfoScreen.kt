@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.book.BookMeta
 import de.dahunni.myrsvp.engine.ReadingText
 import de.dahunni.myrsvp.ui.theme.FocusRow
@@ -40,7 +41,7 @@ fun BookInfoScreen(meta: BookMeta, text: ReadingText, index: Int, wpm: Int, show
     ListScreen(
         title = stringResource(R.string.info_title),
         subtitle = meta.title,
-        hints = listOf(stringResource(R.string.hint_scroll), "", stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_scroll)), null, Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(RowGap)) {

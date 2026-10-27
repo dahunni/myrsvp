@@ -18,7 +18,13 @@ import de.dahunni.myrsvp.data.Progress
 import de.dahunni.myrsvp.data.ProgressStore
 import de.dahunni.myrsvp.data.Settings
 import de.dahunni.myrsvp.data.SettingsStore
+import de.dahunni.myrsvp.BuildConfig
 import de.dahunni.myrsvp.engine.PlayerState
+import de.dahunni.myrsvp.update.Release
+import de.dahunni.myrsvp.update.UpdateError
+import de.dahunni.myrsvp.update.UpdateException
+import de.dahunni.myrsvp.update.Updater
+import de.dahunni.myrsvp.update.Version
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +60,18 @@ sealed interface OpenState {
 }
 
 data class ImportProgress(val done: Int, val total: Int)
+
+/** The updater, as the Settings row and the update screen show it. */
+sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data class Available(val release: Release) : UpdateState
+    data class Downloading(val release: Release, val progress: Float) : UpdateState
+    /** Downloaded; Android's installer is open, or waits for "install unknown apps" to be allowed. */
+    data class Downloaded(val release: Release, val apk: File) : UpdateState
+    data class Failed(val error: UpdateError, val release: Release?) : UpdateState
+}
 
 /** Result of one import run, for a short message in the library. */
 data class ImportReport(val added: Int, val failures: List<Pair<String, ImportError>>)
@@ -91,8 +109,74 @@ class AppModel(app: Application) : AndroidViewModel(app) {
     var open by mutableStateOf<OpenState?>(null)
         private set
 
+    private val updater = Updater(app, BuildConfig.UPDATE_REPOSITORY, "myrsvp/${BuildConfig.VERSION_NAME}")
+    private val installedVersion = Version.parse(BuildConfig.VERSION_NAME)
+    val update = MutableStateFlow<UpdateState>(UpdateState.Idle)
+
+    /** A release found by the automatic check that the app should offer once. */
+    val updatePrompt = MutableStateFlow<Release?>(null)
+
     init {
         refresh()
+        viewModelScope.launch {
+            val s = settingsStore.settings.first()
+            if (s.autoUpdateCheck && System.currentTimeMillis() - s.lastUpdateCheck > AUTO_CHECK_INTERVAL_MS) {
+                checkForUpdates(manual = false)
+            }
+        }
+    }
+
+    /** Asks GitHub for the latest release; an automatic check offers it unless that version was skipped. */
+    fun checkForUpdates(manual: Boolean) {
+        val state = update.value
+        if (state is UpdateState.Checking || state is UpdateState.Downloading) return
+        update.value = UpdateState.Checking
+        viewModelScope.launch {
+            val result = runCatching { updater.latest() }
+            settingsStore.update { it.copy(lastUpdateCheck = System.currentTimeMillis()) }
+            val release = result.getOrNull()
+            update.value = when {
+                result.isFailure -> UpdateState.Failed(
+                    (result.exceptionOrNull() as? UpdateException)?.error ?: UpdateError.Offline, null,
+                )
+                release != null && installedVersion != null && release.version > installedVersion ->
+                    UpdateState.Available(release)
+                else -> UpdateState.UpToDate
+            }
+            val skipped = settingsStore.settings.first().skippedVersion
+            if (!manual && release != null && update.value is UpdateState.Available && release.version.toString() != skipped) {
+                updatePrompt.value = release
+            }
+        }
+    }
+
+    /** Downloads the release's APK and opens Android's installer. */
+    fun downloadAndInstall(release: Release) {
+        val state = update.value
+        if (state is UpdateState.Downloading) return
+        if (state is UpdateState.Downloaded && state.release == release && state.apk.exists()) {
+            updater.install(state.apk)
+            return
+        }
+        update.value = UpdateState.Downloading(release, 0f)
+        viewModelScope.launch {
+            try {
+                val apk = updater.download(release) { p -> update.value = UpdateState.Downloading(release, p) }
+                update.value = UpdateState.Downloaded(release, apk)
+                updater.install(apk)
+            } catch (e: UpdateException) {
+                update.value = UpdateState.Failed(e.error, release)
+            }
+        }
+    }
+
+    fun skipUpdate(release: Release) {
+        updatePrompt.value = null
+        viewModelScope.launch { settingsStore.update { it.copy(skippedVersion = release.version.toString()) } }
+    }
+
+    fun updatePromptShown() {
+        updatePrompt.value = null
     }
 
     private fun refresh() {
@@ -197,5 +281,10 @@ class AppModel(app: Application) : AndroidViewModel(app) {
             }
         }.getOrNull()
         return name ?: uri.lastPathSegment?.substringAfterLast('/') ?: "book"
+    }
+
+    private companion object {
+        /** The automatic update check runs at most this often. */
+        const val AUTO_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
     }
 }

@@ -1,15 +1,15 @@
 # myrsvp — RSVP e-reader for Android
 
-An offline e-reader that shows a book **one word at a time** (RSVP, Rapid Serial Visual Presentation)
+An e-reader that shows a book **one word at a time** (RSVP, Rapid Serial Visual Presentation)
 with a fixed focus letter (ORP) so the eyes never move. Built first for the **Qin F22 Pro** keypad
-phone, released publicly on Google Play (publisher: TH-Operations GmbH), so it must also work on
-normal touch phones.
+phone, published as open source (GPL-3.0-or-later, © Tim Hunneck) through **GitHub releases**, so it
+must also work on normal touch phones. Google Play may come later (see docs/RELEASE.md).
 
 ## Read these first
 - `docs/SPEC.md` — features, RSVP engine rules (timing, ORP), book import, controls, storage
 - `docs/DESIGN.md` — colors, type, sizes and layout of every screen (source of truth for UI)
 - `design/mockups/*.dc.html` — the approved mockups as HTML (read the markup; sizes are px at 640×960)
-- `docs/RELEASE.md` — Play Store requirements; keep the app compliant from day one
+- `docs/RELEASE.md` — how releases are built and published (GitHub Actions, signing, updater)
 
 ## Target device
 - Qin F22 Pro: 3.54" IPS, **640 × 960 px**, Android 11/12, D-pad + numeric keypad + touchscreen.
@@ -19,7 +19,9 @@ normal touch phones.
 ## Tech stack (decided)
 - Kotlin, Jetpack Compose, single Activity. Material3 only as a base; use our own theme (`ui/theme`).
 - minSdk 26, targetSdk as configured. No dynamic color.
-- **No INTERNET permission, no analytics, no ads, no accounts.** Everything stays on the device.
+- **No analytics, no ads, no accounts.** Books, settings and positions stay on the device.
+  The INTERNET permission exists only for the updater (`update/`): the GitHub releases check and the
+  APK download, nothing else; the automatic check can be switched off in Settings.
 - Book import via Storage Access Framework (`ACTION_OPEN_DOCUMENT`), no storage permissions.
 - Settings + reading positions: Jetpack DataStore. Books: app-internal files (format in SPEC).
 - Allowed extra dependencies: `org.jsoup:jsoup` (EPUB HTML → text), `androidx.datastore`,
@@ -31,14 +33,17 @@ de.dahunni.myrsvp
   engine/   pure Kotlin, no Android imports: tokenizer, ORP index, word timing, sentence index
   book/     import (EPUB, TXT), conversion to the internal format, library storage
   data/     DataStore settings + per-book progress
-  ui/       theme/, reader/, library/, menu/, settings/, info/  (one package per screen)
+  ui/       theme/, reader/, library/, menu/, settings/, info/, update/  (one package per screen)
   input/    key + gesture mapping → app actions (one place, so Qin keycodes are easy to adjust)
+  update/   GitHub release check (pure parsing in Releases.kt, tested), download, install
 ```
 
 ## Commands
 - Build: `./gradlew assembleDebug`
 - Unit tests: `./gradlew testDebugUnitTest`
 - Install on connected phone: `./gradlew installDebug`
+- Release: publish a GitHub release tagged `vX.Y.Z`; CI builds and attaches the signed APK (docs/RELEASE.md)
+- CI (`.github/workflows/ci.yml`) runs unit tests, lint and a debug build on every push; keep it green
 
 ## Rules
 - `engine/` must be fully unit-tested (ORP index, timing, abbreviations, sentence jumps).

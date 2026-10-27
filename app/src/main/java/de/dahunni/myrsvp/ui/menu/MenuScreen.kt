@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.engine.ReadingText
 import de.dahunni.myrsvp.ui.theme.FocusRow
 import de.dahunni.myrsvp.ui.theme.LabelValue
@@ -41,7 +42,7 @@ fun MenuScreen(
     ListScreen(
         title = stringResource(R.string.menu_title),
         subtitle = stringResource(R.string.menu_subtitle, title, (text.progress(index) * 100).toInt()),
-        hints = listOf(stringResource(R.string.hint_move), stringResource(R.string.hint_select), stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_move)), Hints.ok(stringResource(R.string.hint_select)), Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         val rows = listOf(
@@ -77,7 +78,7 @@ fun ChaptersScreen(
     ListScreen(
         title = stringResource(R.string.chapters_title),
         subtitle = title,
-        hints = listOf(stringResource(R.string.hint_move), stringResource(R.string.hint_select), stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_move)), Hints.ok(stringResource(R.string.hint_select)), Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(RowGap)) {

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import de.dahunni.myrsvp.BuildConfig
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.input.KeyCodes
 import de.dahunni.myrsvp.ui.theme.InitialFocus
 import de.dahunni.myrsvp.ui.theme.ListScreen
@@ -29,9 +30,13 @@ import de.dahunni.myrsvp.ui.theme.UiFont
 import kotlinx.coroutines.launch
 
 private const val CREDITS = """my-rsvp %s
-TH-Operations GmbH
+Copyright (C) 2026 Tim Hunneck
 
-An offline RSVP e-reader. No internet access, no tracking, no accounts: books, settings and reading positions stay on this device.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed WITHOUT ANY WARRANTY; see the GNU General Public License (full text below) for details.
+
+Source code: https://github.com/%s
+
+An RSVP e-reader without tracking, ads or accounts: books, settings and reading positions stay on this device. The only connection is the update check against the GitHub releases above, which can be switched off in Settings.
 
 Reading rules (focus letter, word timing, sentence pauses) adapted from:
 • RSVP Nano by ionutdecebal (github.com/ionutdecebal/rsvpnano), MIT License
@@ -48,16 +53,17 @@ fun AboutScreen(showHints: Boolean) {
     val context = LocalContext.current
     val text = remember {
         fun asset(name: String) = runCatching { context.assets.open(name).bufferedReader().use { it.readText() } }.getOrDefault("")
-        CREDITS.format(BuildConfig.VERSION_NAME) +
+        CREDITS.format(BuildConfig.VERSION_NAME, BuildConfig.UPDATE_REPOSITORY) +
             "\n— Alte DIN 1451 —\n\n" + asset("licenses/AlteDIN1451-OFL.txt") +
-            "\n\n— jsoup —\n\n" + asset("licenses/jsoup-MIT.txt")
+            "\n\n— jsoup —\n\n" + asset("licenses/jsoup-MIT.txt") +
+            "\n\n— my-rsvp: GNU General Public License v3 —\n\n" + asset("licenses/GPL-3.0.txt")
     }
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
     ListScreen(
         title = stringResource(R.string.about_title),
-        hints = listOf(stringResource(R.string.hint_scroll), "", stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_scroll)), null, Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         Text(

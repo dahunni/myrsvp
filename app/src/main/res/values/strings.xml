@@ -15,19 +15,19 @@
     <string name="reader_opening">Opening…</string>
     <string name="reader_open_failed">This book could not be opened.</string>
 
-    <!-- Key hints -->
-    <string name="hint_speed">▲▼ Speed</string>
-    <string name="hint_pause">OK Pause</string>
-    <string name="hint_sentence">◀▶ Sentence</string>
-    <string name="hint_resume">OK Resume</string>
-    <string name="hint_page">▲▼ Page</string>
-    <string name="hint_menu">☰ Menu</string>
-    <string name="hint_move">▲▼ Move</string>
-    <string name="hint_open">OK Open</string>
-    <string name="hint_select">OK Select</string>
-    <string name="hint_back">↩ Back</string>
-    <string name="hint_change">◀▶ Change</string>
-    <string name="hint_scroll">▲▼ Scroll</string>
+    <!-- Key-hint labels; the key glyphs come from input/Hints.kt -->
+    <string name="hint_speed">Speed</string>
+    <string name="hint_pause">Pause</string>
+    <string name="hint_sentence">Sentence</string>
+    <string name="hint_resume">Resume</string>
+    <string name="hint_page">Page</string>
+    <string name="hint_menu">Menu</string>
+    <string name="hint_move">Move</string>
+    <string name="hint_open">Open</string>
+    <string name="hint_select">Select</string>
+    <string name="hint_back">Back</string>
+    <string name="hint_change">Change</string>
+    <string name="hint_scroll">Scroll</string>
 
     <!-- Library -->
     <string name="library_title">Library</string>
@@ -103,6 +103,31 @@
     <string name="settings_value_focused">◀  %1$s  ▶</string>
     <string name="settings_about">About &amp; licenses</string>
     <string name="settings_version">Version</string>
+
+    <string name="settings_auto_update">Check for updates automatically</string>
+    <string name="settings_check_update">Check for updates</string>
+    <string name="update_status_checking">Checking…</string>
+    <string name="update_status_up_to_date">Up to date</string>
+    <string name="update_status_available">%1$s available</string>
+    <string name="update_status_downloading">Downloading %1$d\u00A0%%</string>
+    <string name="update_status_offline">No connection</string>
+    <string name="update_status_failed">Failed</string>
+
+    <!-- Update -->
+    <string name="update_title">Update</string>
+    <string name="update_subtitle">Version %1$s · installed %2$s</string>
+    <string name="update_install">Download and install</string>
+    <string name="update_install_again">Install</string>
+    <string name="update_downloading">Downloading… %1$d\u00A0%%</string>
+    <string name="update_no_apk">No app file in this release yet</string>
+    <string name="update_retry">Try again</string>
+    <string name="update_later">Later</string>
+    <string name="update_skip">Skip this version</string>
+    <string name="update_whats_new">What\'s new</string>
+    <string name="update_error_offline">No connection to GitHub.</string>
+    <string name="update_error_download">The download failed.</string>
+    <string name="update_error_checksum">The download was damaged; please try again.</string>
+    <string name="update_permission_hint">If Android asks, allow installing from my-rsvp, come back and choose Install.</string>
 
     <!-- About -->
     <string name="about_title">About</string>

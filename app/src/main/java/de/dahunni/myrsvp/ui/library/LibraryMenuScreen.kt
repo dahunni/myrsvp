@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.ui.theme.FocusRow
 import de.dahunni.myrsvp.ui.theme.LabelValue
 import de.dahunni.myrsvp.ui.theme.ListScreen
@@ -31,7 +32,7 @@ fun LibraryMenuScreen(
     ListScreen(
         title = stringResource(R.string.library_menu_title),
         subtitle = bookTitle,
-        hints = listOf(stringResource(R.string.hint_move), stringResource(R.string.hint_select), stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_move)), Hints.ok(stringResource(R.string.hint_select)), Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(RowGap)) {

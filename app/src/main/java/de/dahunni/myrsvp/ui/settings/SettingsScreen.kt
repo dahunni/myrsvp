@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import de.dahunni.myrsvp.BuildConfig
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.data.Settings
 import de.dahunni.myrsvp.engine.WordTiming
 import de.dahunni.myrsvp.input.ListKey
@@ -19,7 +20,9 @@ import de.dahunni.myrsvp.ui.theme.FocusRow
 import de.dahunni.myrsvp.ui.theme.LabelValue
 import de.dahunni.myrsvp.ui.theme.ListScreen
 import de.dahunni.myrsvp.ui.theme.RowGap
+import de.dahunni.myrsvp.ui.UpdateState
 import de.dahunni.myrsvp.ui.theme.WordSize
+import de.dahunni.myrsvp.update.UpdateError
 import de.dahunni.myrsvp.ui.theme.rememberFocusedRow
 
 /** Pressing OK this often on the version row opens the key test screen. */
@@ -44,6 +47,9 @@ fun SettingsScreen(
     settings: Settings,
     showHints: Boolean,
     onChange: ((Settings) -> Settings) -> Unit,
+    update: UpdateState,
+    /** OK on "Check for updates": checks, or opens the update once one was found. */
+    onUpdate: () -> Unit,
     onAbout: () -> Unit,
     onKeyTest: () -> Unit,
 ) {
@@ -84,14 +90,28 @@ fun SettingsScreen(
         ValueRow(stringResource(R.string.settings_guide_lines), onOff(settings.guideLines)) { _, _ ->
             onChange { it.copy(guideLines = !it.guideLines) }
         },
+        ValueRow(stringResource(R.string.settings_auto_update), onOff(settings.autoUpdateCheck)) { _, _ ->
+            onChange { it.copy(autoUpdateCheck = !it.autoUpdateCheck) }
+        },
     )
+    val updateStatus = when (update) {
+        UpdateState.Idle -> null
+        UpdateState.Checking -> stringResource(R.string.update_status_checking)
+        UpdateState.UpToDate -> stringResource(R.string.update_status_up_to_date)
+        is UpdateState.Available -> stringResource(R.string.update_status_available, update.release.version.toString())
+        is UpdateState.Downloading -> stringResource(R.string.update_status_downloading, (update.progress * 100).toInt())
+        is UpdateState.Downloaded -> stringResource(R.string.update_status_available, update.release.version.toString())
+        is UpdateState.Failed -> stringResource(
+            if (update.error == UpdateError.Offline) R.string.update_status_offline else R.string.update_status_failed,
+        )
+    }
 
     val listState = rememberLazyListState()
     val focused = rememberFocusedRow()
     var versionPresses by remember { mutableIntStateOf(0) }
     ListScreen(
         title = stringResource(R.string.settings_title),
-        hints = listOf(stringResource(R.string.hint_move), stringResource(R.string.hint_change), stringResource(R.string.hint_back)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_move)), Hints.leftRight(stringResource(R.string.hint_change)), Hints.back(stringResource(R.string.hint_back))),
         showHints = showHints,
     ) {
         LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(RowGap)) {
@@ -114,9 +134,16 @@ fun SettingsScreen(
             }
             item {
                 FocusRow(
-                    onClick = onAbout,
+                    onClick = onUpdate,
                     autoFocus = focused.intValue == rows.size,
                     onFocused = { focused.intValue = rows.size },
+                ) { f -> LabelValue(stringResource(R.string.settings_check_update), updateStatus, f) }
+            }
+            item {
+                FocusRow(
+                    onClick = onAbout,
+                    autoFocus = focused.intValue == rows.size + 1,
+                    onFocused = { focused.intValue = rows.size + 1 },
                 ) { f -> LabelValue(stringResource(R.string.settings_about), null, f) }
             }
             item {
@@ -128,8 +155,8 @@ fun SettingsScreen(
                             onKeyTest()
                         }
                     },
-                    autoFocus = focused.intValue == rows.size + 1,
-                    onFocused = { focused.intValue = rows.size + 1 },
+                    autoFocus = focused.intValue == rows.size + 2,
+                    onFocused = { focused.intValue = rows.size + 2 },
                 ) { f -> LabelValue(stringResource(R.string.settings_version), BuildConfig.VERSION_NAME, f) }
             }
         }

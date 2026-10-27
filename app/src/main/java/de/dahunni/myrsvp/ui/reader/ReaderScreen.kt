@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.engine.Player
 import de.dahunni.myrsvp.engine.PlayerSettings
 import de.dahunni.myrsvp.engine.PlayerState
@@ -281,9 +282,9 @@ private fun Footer(text: ReadingText, state: PlayerState, showHints: Boolean) {
         }
         if (showHints) {
             if (state.playing) {
-                HintBar(listOf(stringResource(R.string.hint_speed), stringResource(R.string.hint_pause), stringResource(R.string.hint_sentence)))
+                HintBar(listOf(Hints.upDown(stringResource(R.string.hint_speed)), Hints.ok(stringResource(R.string.hint_pause)), Hints.leftRight(stringResource(R.string.hint_sentence))))
             } else {
-                HintBar(listOf(stringResource(R.string.hint_resume), stringResource(R.string.hint_page), stringResource(R.string.hint_menu)))
+                HintBar(listOf(Hints.ok(stringResource(R.string.hint_resume)), Hints.upDown(stringResource(R.string.hint_page)), Hints.menu(stringResource(R.string.hint_menu))))
             }
         }
     }

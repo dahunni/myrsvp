@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.dahunni.myrsvp.R
+import de.dahunni.myrsvp.input.Hints
 import de.dahunni.myrsvp.input.ListKey
 import de.dahunni.myrsvp.input.listKey
 import de.dahunni.myrsvp.ui.ImportProgress
@@ -74,7 +75,7 @@ fun LibraryScreen(
     ListScreen(
         title = stringResource(R.string.library_title),
         trailing = pluralStringResource(R.plurals.library_count, books.size, books.size),
-        hints = listOf(stringResource(R.string.hint_move), stringResource(R.string.hint_open), stringResource(R.string.hint_menu)),
+        hints = listOf(Hints.upDown(stringResource(R.string.hint_move)), Hints.ok(stringResource(R.string.hint_open)), Hints.menu(stringResource(R.string.hint_menu))),
         showHints = showHints,
         modifier = Modifier.onPreviewKeyEvent { event ->
             if (listKey(event.nativeKeyEvent.keyCode) != ListKey.Menu) return@onPreviewKeyEvent false

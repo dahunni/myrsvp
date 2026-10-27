@@ -1,15 +1,20 @@
 package de.dahunni.myrsvp.ui.theme
 
+import android.os.SystemClock
+import android.view.KeyEvent
 import android.view.ViewConfiguration
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -48,8 +53,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import de.dahunni.myrsvp.input.Hint
+import de.dahunni.myrsvp.input.HintKey
 import de.dahunni.myrsvp.input.KeyCodes
 import de.dahunni.myrsvp.input.ListKey
 import de.dahunni.myrsvp.input.OkKey
@@ -74,7 +82,8 @@ private val MaxValueWidth = 150.dp
 @Composable
 fun ListScreen(
     title: String,
-    hints: List<String>,
+    /** Key hints; a null entry is an empty slot (keeps the others spread like three hints). */
+    hints: List<Hint?>,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     trailing: String? = null,
@@ -110,19 +119,66 @@ fun ListScreen(
     }
 }
 
-/** Key hints spread evenly under a 0.5 dp divider (docs/DESIGN.md). */
+/**
+ * Key hints spread evenly under a 0.5 dp divider (docs/DESIGN.md). Users touch them, so each key
+ * in a hint is a button that sends that key: tapping "☰" is pressing ☰. The buttons never take
+ * the D-pad focus.
+ */
 @Composable
-fun HintBar(hints: List<String>, modifier: Modifier = Modifier) {
+fun HintBar(hints: List<Hint?>, modifier: Modifier = Modifier) {
     val colors = RsvpTheme.colors
+    val view = LocalView.current
+    val back = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    fun press(key: HintKey) {
+        when (key) {
+            HintKey.Back -> back?.onBackPressed()
+            is HintKey.Press -> {
+                // Through the window like a hardware key, so it reaches whatever has the focus.
+                val now = SystemClock.uptimeMillis()
+                view.rootView.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, key.keyCode, 0))
+                view.rootView.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, key.keyCode, 0))
+            }
+        }
+    }
     Row(
         modifier
             .fillMaxWidth()
             .drawBehind { drawLine(colors.divider, Offset(0f, 0f), Offset(size.width, 0f), 0.5.dp.toPx()) }
-            .padding(top = 8.dp),
+            .padding(top = 8.dp - HintTouchPadding),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        hints.forEach { Text(it, style = RsvpTheme.type.hint, color = colors.textMuted) }
+        hints.forEach { hint ->
+            if (hint == null) {
+                Text("", style = RsvpTheme.type.hint)
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    hint.keys.forEach { key -> HintButton(key.glyph) { press(key) } }
+                    // A hint with one key: its label is part of the button.
+                    val single = hint.keys.singleOrNull()
+                    HintButton(hint.label, enabled = single != null) { single?.let(::press) }
+                }
+            }
+        }
     }
+}
+
+/** Extra touch area around hint text; the bar's top padding is reduced by the same amount. */
+private val HintTouchPadding = 6.dp
+
+@Composable
+private fun HintButton(text: String, enabled: Boolean = true, onTap: () -> Unit) {
+    val colors = RsvpTheme.colors
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    Text(
+        text,
+        style = RsvpTheme.type.hint,
+        color = if (pressed) colors.text else colors.textMuted,
+        modifier = Modifier
+            .focusProperties { canFocus = false }
+            .then(if (enabled) Modifier.clickable(interaction, indication = null, onClick = onTap) else Modifier)
+            .padding(horizontal = 2.dp, vertical = HintTouchPadding),
+    )
 }
 
 /**

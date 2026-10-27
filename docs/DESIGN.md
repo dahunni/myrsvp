@@ -93,6 +93,11 @@ Focus-letter accent (setting "Focus letter"), also used for the focus outline in
 - Settings ends with "About & licenses" and "Version" (OK 5× on Version opens the hidden key test).
 - Settings row: label left, value right; the focused row shows "◀  350 wpm  ▶" in text color, others the
   plain value in textMuted.
+- Key hints are tappable (docs/SPEC.md §3): each key glyph sends its key, single-key hints are tappable as a
+  whole; pressed hint text turns to the text color. Touch area 6 dp above and below the text (the bar's top
+  padding shrinks by the same amount, so the text stays where it was).
+- Update screen: list layout like Menu; subtitle "Version 1.3.0 · installed 1.2.0"; rows Download and install
+  (shows "Downloading… 45 %") · Later · Skip this version; then "What's new" (meta) and the notes as read-only rows.
 - Key-hint bar at the bottom like the reader: Library "▲▼ Move · OK Open · ☰ Menu", Menu "▲▼ Move · OK Select · ↩ Back",
   Settings "▲▼ Move · ◀▶ Change · ↩ Back", Book info / About "▲▼ Scroll · ↩ Back".
 

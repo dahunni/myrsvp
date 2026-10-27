@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import de.dahunni.myrsvp.engine.WordTiming
@@ -24,6 +25,11 @@ data class Settings(
     val rampUp: Boolean = true,
     val guideLines: Boolean = true,
     val lastBookId: String? = null,
+    /** Look for a new release on GitHub by itself (at most every few hours). */
+    val autoUpdateCheck: Boolean = true,
+    /** A release the user chose to skip; it isn't offered again automatically. */
+    val skippedVersion: String? = null,
+    val lastUpdateCheck: Long = 0,
 )
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -44,6 +50,9 @@ class SettingsStore(context: Context) {
             p[RAMP_UP] = new.rampUp
             p[GUIDE_LINES] = new.guideLines
             if (new.lastBookId != null) p[LAST_BOOK] = new.lastBookId else p.remove(LAST_BOOK)
+            p[AUTO_UPDATE] = new.autoUpdateCheck
+            if (new.skippedVersion != null) p[SKIPPED_VERSION] = new.skippedVersion else p.remove(SKIPPED_VERSION)
+            p[LAST_UPDATE_CHECK] = new.lastUpdateCheck
         }
     }
 
@@ -56,6 +65,9 @@ class SettingsStore(context: Context) {
         rampUp = this[RAMP_UP] ?: true,
         guideLines = this[GUIDE_LINES] ?: true,
         lastBookId = this[LAST_BOOK],
+        autoUpdateCheck = this[AUTO_UPDATE] ?: true,
+        skippedVersion = this[SKIPPED_VERSION],
+        lastUpdateCheck = this[LAST_UPDATE_CHECK] ?: 0,
     )
 
     private companion object {
@@ -67,5 +79,8 @@ class SettingsStore(context: Context) {
         val RAMP_UP = booleanPreferencesKey("ramp_up")
         val GUIDE_LINES = booleanPreferencesKey("guide_lines")
         val LAST_BOOK = stringPreferencesKey("last_book")
+        val AUTO_UPDATE = booleanPreferencesKey("auto_update_check")
+        val SKIPPED_VERSION = stringPreferencesKey("skipped_version")
+        val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
     }
 }

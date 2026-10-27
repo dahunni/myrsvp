@@ -23,8 +23,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import de.dahunni.myrsvp.BuildConfig
 import de.dahunni.myrsvp.R
 import de.dahunni.myrsvp.book.ImportError
 import de.dahunni.myrsvp.data.Settings
@@ -40,6 +42,7 @@ import de.dahunni.myrsvp.ui.settings.AboutScreen
 import de.dahunni.myrsvp.ui.settings.KeyTestScreen
 import de.dahunni.myrsvp.ui.settings.SettingsScreen
 import de.dahunni.myrsvp.ui.theme.RsvpTheme
+import de.dahunni.myrsvp.ui.update.UpdateScreen
 
 private object Routes {
     const val LIBRARY = "library"
@@ -51,6 +54,7 @@ private object Routes {
     const val SETTINGS = "settings"
     const val ABOUT = "about"
     const val KEYS = "keys"
+    const val UPDATE = "update"
 
     fun libraryMenu(bookId: String?) = "library-menu?book=${bookId.orEmpty()}"
 }
@@ -66,11 +70,22 @@ fun MyrsvpApp(model: AppModel, settings: Settings) {
     val showHints = hasKeypad(LocalConfiguration.current)
     val books by model.library.collectAsState()
     val importing by model.importing.collectAsState()
+    val update by model.update.collectAsState()
+    val updatePrompt by model.updatePrompt.collectAsState()
+    val route = nav.currentBackStackEntryAsState().value?.destination?.route
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.import(it) }
     val addBooks = { picker.launch(IMPORT_TYPES) }
 
     LaunchedEffect(Unit) {
         model.reports.collect { report -> Toast.makeText(context, reportText(context, report), Toast.LENGTH_LONG).show() }
+    }
+
+    // A new release found by the automatic check is offered once, when the user is in the library.
+    LaunchedEffect(updatePrompt, route) {
+        if (updatePrompt != null && route == Routes.LIBRARY) {
+            model.updatePromptShown()
+            nav.navigate(Routes.UPDATE)
+        }
     }
 
     NavHost(
@@ -177,12 +192,45 @@ fun MyrsvpApp(model: AppModel, settings: Settings) {
                 settings = settings,
                 showHints = showHints,
                 onChange = model::updateSettings,
+                update = update,
+                onUpdate = {
+                    if (update is UpdateState.Available || update is UpdateState.Downloaded || update is UpdateState.Downloading) {
+                        nav.navigate(Routes.UPDATE)
+                    } else {
+                        model.checkForUpdates(manual = true)
+                    }
+                },
                 onAbout = { nav.navigate(Routes.ABOUT) },
                 onKeyTest = { nav.navigate(Routes.KEYS) },
             )
         }
         composable(Routes.ABOUT) { AboutScreen(showHints) }
         composable(Routes.KEYS) { KeyTestScreen() }
+        composable(Routes.UPDATE) {
+            val release = when (val u = update) {
+                is UpdateState.Available -> u.release
+                is UpdateState.Downloading -> u.release
+                is UpdateState.Downloaded -> u.release
+                is UpdateState.Failed -> u.release
+                else -> null
+            }
+            if (release == null) {
+                BackToLibrary(nav)
+            } else {
+                UpdateScreen(
+                    release = release,
+                    state = update,
+                    installedVersion = BuildConfig.VERSION_NAME,
+                    showHints = showHints,
+                    onInstall = { model.downloadAndInstall(release) },
+                    onLater = { nav.popBackStack() },
+                    onSkip = {
+                        model.skipUpdate(release)
+                        nav.popBackStack()
+                    },
+                )
+            }
+        }
     }
 }
 
