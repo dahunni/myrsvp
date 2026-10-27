@@ -48,7 +48,6 @@ private object Routes {
     const val LIBRARY = "library"
     const val LIBRARY_MENU = "library-menu?book={book}"
     const val READER = "reader"
-    const val MENU = "menu"
     const val CHAPTERS = "chapters"
     const val INFO = "info"
     const val SETTINGS = "settings"
@@ -140,32 +139,34 @@ fun MyrsvpApp(model: AppModel, settings: Settings) {
                     session = open.session,
                     title = open.session.book.meta.title,
                     settings = settings,
-                    onOpenMenu = { nav.navigate(Routes.MENU) },
+                    menu = {
+                        val session = open.session
+                        MenuScreen(
+                            title = session.book.meta.title,
+                            text = session.book.text,
+                            index = session.state.index,
+                            showHints = showHints,
+                            onContinue = { session.menuOpen = false },
+                            onChapters = { nav.navigate(Routes.CHAPTERS) },
+                            onBookInfo = { nav.navigate(Routes.INFO) },
+                            onSettings = { nav.navigate(Routes.SETTINGS) },
+                            onStartOver = {
+                                session.state = Player(session.book.text).jumpTo(session.state, 0)
+                                session.menuOpen = false
+                            },
+                            onLibrary = {
+                                session.menuOpen = false
+                                nav.popBackStack(Routes.LIBRARY, inclusive = false)
+                            },
+                            focused = session.menuRow,
+                        )
+                    },
                     onSpeedChange = { wpm -> model.updateSettings { it.copy(wpm = wpm) } },
                     onSaveProgress = { model.saveProgress(open.session) },
                 )
                 is OpenState.Loading -> Message(stringResource(R.string.reader_opening))
                 is OpenState.Failed -> Message(stringResource(R.string.reader_open_failed))
                 null -> BackToLibrary(nav)
-            }
-        }
-        composable(Routes.MENU) {
-            WithSession(model, nav) { session ->
-                MenuScreen(
-                    title = session.book.meta.title,
-                    text = session.book.text,
-                    index = session.state.index,
-                    showHints = showHints,
-                    onContinue = { nav.popBackStack() },
-                    onChapters = { nav.navigate(Routes.CHAPTERS) },
-                    onBookInfo = { nav.navigate(Routes.INFO) },
-                    onSettings = { nav.navigate(Routes.SETTINGS) },
-                    onStartOver = {
-                        session.state = Player(session.book.text).jumpTo(session.state, 0)
-                        nav.popBackStack(Routes.READER, inclusive = false)
-                    },
-                    onLibrary = { nav.popBackStack(Routes.LIBRARY, inclusive = false) },
-                )
             }
         }
         composable(Routes.CHAPTERS) {
@@ -177,6 +178,7 @@ fun MyrsvpApp(model: AppModel, settings: Settings) {
                     showHints = showHints,
                     onSelect = { wordIndex ->
                         session.state = Player(session.book.text).jumpTo(session.state, wordIndex)
+                        session.menuOpen = false
                         nav.popBackStack(Routes.READER, inclusive = false)
                     },
                 )

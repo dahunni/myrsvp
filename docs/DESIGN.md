@@ -102,6 +102,13 @@ Focus-letter accent (setting "Focus letter"), also used for the focus outline in
   Settings "▲▼ Move · ◀▶ Change · ↩ Back", Book info / About "▲▼ Scroll · ↩ Back".
 
 ## Motion
-None for words (instant swap, no fade). Lists: no animations except a 150 ms focus-background change.
+None for words (instant swap, no fade).
+Lists: one focus highlight per screen (rowFocused + accent outline) that slides to the newly focused row in
+140 ms (FastOutSlowIn) when ▲▼ move the focus, and follows its row exactly while the list scrolls. Rows never
+fade in or out on their own; nothing else animates.
+Paused view: ▲▼ (and ◀▶) scroll the page by its full height in 220 ms (FastOutSlowIn), old and new page both
+fully drawn (no fade, never an empty frame).
+Reader menu: a layer over the reader, not a separate screen, so it appears in the next frame. While it opens,
+the reader keeps showing exactly what it showed (no switch to the paused view underneath).
 Speed change: no overlay on the word. The header's wpm label pops into a pill (rowFocused, text color, scale 1.15,
 150 ms in), holds 800 ms, then settles back in 300 ms. The pill is drawn around the label, so the layout never shifts.

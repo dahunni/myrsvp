@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import de.dahunni.myrsvp.R
@@ -33,6 +34,8 @@ fun MenuScreen(
     onSettings: () -> Unit,
     onStartOver: () -> Unit,
     onLibrary: () -> Unit,
+    /** The focused row; the caller decides when it resets (see ReaderSession.menuRow). */
+    focused: MutableIntState = rememberFocusedRow(),
 ) {
     val chapter = text.chapterOf(index)
     val chaptersValue = when {
@@ -53,7 +56,6 @@ fun MenuScreen(
             Triple(R.string.menu_start_over, null, onStartOver),
             Triple(R.string.menu_library, null, onLibrary),
         )
-        val focused = rememberFocusedRow()
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(RowGap)) {
             rows.forEachIndexed { i, (label, value, action) ->
                 FocusRow(onClick = action, autoFocus = focused.intValue == i, onFocused = { focused.intValue = i }) { f ->

@@ -5,6 +5,23 @@ import android.view.KeyEvent
 import android.view.ViewConfiguration
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -65,7 +82,8 @@ import de.dahunni.myrsvp.input.OkPress
 import de.dahunni.myrsvp.input.listKey
 
 val MaxContentWidth = 480.dp
-private val RowShape = RoundedCornerShape(7.dp)
+private val RowCorner = 7.dp
+private val RowShape = RoundedCornerShape(RowCorner)
 private val FocusOutline = 1.5.dp
 private const val FOCUS_FADE_MS = 150
 
@@ -113,7 +131,17 @@ fun ListScreen(
                     if (trailing != null) Text(trailing, style = type.meta, color = colors.textMuted)
                 }
             }
-            Column(Modifier.weight(1f).fillMaxWidth(), content = content)
+            val highlight = remember { FocusHighlight() }
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .onGloballyPositioned { highlight.origin = it }
+                    .then(highlight.drawModifier(colors)),
+            ) {
+                CompositionLocalProvider(LocalFocusHighlight provides highlight) { content() }
+            }
+            highlight.Animate()
             if (showHints) HintBar(hints, Modifier.padding(horizontal = 4.dp))
         }
     }
@@ -204,7 +232,14 @@ fun FocusRow(
     val colors = RsvpTheme.colors
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val bg by animateColorAsState(if (focused) colors.rowFocused else Color.Transparent, tween(FOCUS_FADE_MS), label = "row")
+    // In a ListScreen one shared highlight slides to the focused row; elsewhere the row paints its own.
+    val highlight = LocalFocusHighlight.current
+    val ownHighlight = focused && highlight == null
+    val bg by animateColorAsState(if (ownHighlight) colors.rowFocused else Color.Transparent, tween(FOCUS_FADE_MS), label = "row")
+    val bounds = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    LaunchedEffect(focused, highlight) {
+        if (focused) bounds[0]?.let { highlight?.moveTo(interaction, it) }
+    }
     val requester = remember { FocusRequester() }
     val ok = remember { OkKey(ViewConfiguration.getLongPressTimeout().toLong()) }
     if (autoFocus) {
@@ -239,10 +274,15 @@ fun FocusRow(
                 val handler = onKey ?: return@onPreviewKeyEvent false
                 if (event.type == KeyEventType.KeyDown) handler(key) else true
             }
+            .onGloballyPositioned { coordinates ->
+                bounds[0] = coordinates
+                // Keeps the highlight on the row while the list scrolls.
+                if (focused) highlight?.moveTo(interaction, coordinates)
+            }
             .clip(RowShape)
             .then(if (focused) Modifier else background)
             .background(bg)
-            .then(if (focused) Modifier.border(FocusOutline, colors.accent, RowShape) else Modifier)
+            .then(if (ownHighlight) Modifier.border(FocusOutline, colors.accent, RowShape) else Modifier)
             .then(clickModifier)
             .padding(padding),
     ) {
@@ -289,3 +329,70 @@ fun InitialFocus(requester: FocusRequester) {
  */
 @Composable
 fun rememberFocusedRow(initial: Int = 0): MutableIntState = rememberSaveable { mutableIntStateOf(initial) }
+
+/**
+ * The focus indicator of a list screen (rowFocused background + accent outline, docs/DESIGN.md):
+ * one rectangle that slides from row to row when ▲▼ move the focus, instead of one row fading out
+ * while the next flashes in. It follows its row exactly while the list scrolls.
+ */
+@Stable
+class FocusHighlight {
+    private class Target(val row: Any, val rect: Rect)
+
+    private var target by mutableStateOf<Target?>(null)
+    private val rect = Animatable(Rect.Zero, Rect.VectorConverter)
+    private var visible by mutableStateOf(false)
+    internal var origin: LayoutCoordinates? = null
+
+    /** Called by the focused row with its bounds; [row] tells a new row from the same row moving. */
+    internal fun moveTo(row: Any, coordinates: LayoutCoordinates) {
+        val origin = origin ?: return
+        if (!origin.isAttached || !coordinates.isAttached) return
+        target = Target(row, origin.localBoundingBoxOf(coordinates, clipBounds = false))
+    }
+
+    @Composable
+    internal fun Animate() {
+        LaunchedEffect(this) {
+            var row: Any? = null
+            var settled = true
+            snapshotFlow { target }.collectLatest { t ->
+                if (t == null) return@collectLatest
+                when {
+                    // The first focus of the screen appears in place.
+                    !visible -> {
+                        rect.snapTo(t.rect)
+                        row = t.row
+                        visible = true
+                    }
+                    t.row != row || !settled -> {
+                        row = t.row
+                        settled = false
+                        rect.animateTo(t.rect, tween(HIGHLIGHT_SLIDE_MS, easing = FastOutSlowInEasing))
+                        settled = true
+                    }
+                    else -> rect.snapTo(t.rect)
+                }
+            }
+        }
+    }
+
+    internal fun drawModifier(colors: RsvpColors) = Modifier.clipToBounds().drawBehind {
+        if (!visible) return@drawBehind
+        val r = rect.value
+        val corner = CornerRadius(RowCorner.toPx())
+        drawRoundRect(colors.rowFocused, r.topLeft, r.size, corner)
+        val stroke = FocusOutline.toPx()
+        drawRoundRect(
+            colors.accent,
+            topLeft = r.topLeft + Offset(stroke / 2, stroke / 2),
+            size = Size(r.width - stroke, r.height - stroke),
+            cornerRadius = CornerRadius(corner.x - stroke / 2),
+            style = Stroke(stroke),
+        )
+    }
+}
+
+internal val LocalFocusHighlight = staticCompositionLocalOf<FocusHighlight?> { null }
+
+private const val HIGHLIGHT_SLIDE_MS = 140

@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -51,6 +52,12 @@ data class LibraryBook(
 /** The book open in the reader. Its playback state outlives the reader screen (menu, settings). */
 class ReaderSession(val id: String, val book: BookText) {
     var state by mutableStateOf(PlayerState())
+
+    /** The reader menu is open (a layer over the reader, so it opens without a screen change). */
+    var menuOpen by mutableStateOf(false)
+
+    /** The menu row with the focus: "Continue reading" on opening, kept while a sub-screen is open. */
+    val menuRow = mutableIntStateOf(0)
 }
 
 sealed interface OpenState {
@@ -248,14 +255,17 @@ class AppModel(app: Application) : AndroidViewModel(app) {
 
     /** Saves the session's position (current sentence start) and whether the end was reached. */
     fun saveProgress(session: ReaderSession) {
-        val state = session.state
+        val index = session.state.index
         val text = session.book.text
-        val progress = Progress(
-            byteOffset = session.book.byteOffsetForWord(state.index),
-            lastOpened = System.currentTimeMillis(),
-            finished = text.size > 0 && state.index >= text.size - 1,
-        )
-        viewModelScope.launch { progressStore.save(session.id, progress) }
+        val now = System.currentTimeMillis()
+        viewModelScope.launch {
+            // Off the main thread: finding the byte offset walks the book text up to the position.
+            val offset = withContext(Dispatchers.Default) { session.book.byteOffsetForWord(index) }
+            progressStore.save(
+                session.id,
+                Progress(byteOffset = offset, lastOpened = now, finished = text.size > 0 && index >= text.size - 1),
+            )
+        }
     }
 
     fun updateSettings(transform: (Settings) -> Settings) {

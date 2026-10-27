@@ -3,7 +3,11 @@ package de.dahunni.myrsvp.ui.reader
 import android.os.SystemClock
 import android.view.ViewConfiguration
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.runtime.SideEffect
@@ -42,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -58,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -86,6 +92,8 @@ private const val SPEED_POP_IN_MS = 150
 private const val SPEED_HOLD_MS = 800L
 private const val SPEED_POP_OUT_MS = 300
 private const val SPEED_POP_SCALE = 0.15f
+/** Page turn in the paused view: the pages scroll by their full height. */
+private const val PAGE_TURN_MS = 220
 private val SpeedPillPadding = DpSize(7.dp, 3.dp)
 
 /**
@@ -97,7 +105,8 @@ fun ReaderScreen(
     session: ReaderSession,
     title: String,
     settings: Settings,
-    onOpenMenu: () -> Unit,
+    /** The reader menu, drawn over the reader while [ReaderSession.menuOpen]. */
+    menu: @Composable () -> Unit,
     onSpeedChange: (wpm: Int) -> Unit,
     onSaveProgress: () -> Unit,
 ) {
@@ -110,6 +119,11 @@ fun ReaderScreen(
     /** The piece of a split long word currently on screen, or null for the whole word. */
     var shownChunk by remember { mutableStateOf<String?>(null) }
     var speedChanges by remember { mutableIntStateOf(0) }
+    /**
+     * Set while the menu opens: the reader keeps showing exactly this state, so the frame that opens
+     * the menu doesn't also redraw the reader as paused (it is about to be covered anyway).
+     */
+    var frozen by remember { mutableStateOf<PlayerState?>(null) }
     val keys = remember { ReaderKeyInterpreter(ViewConfiguration.getLongPressTimeout().toLong()) }
     /** Set from composition once the paused area is measured; used by ▲▼ paging. */
     val pages = remember { Ref<PageLayout>() }
@@ -126,11 +140,18 @@ fun ReaderScreen(
             ReaderAction.SentenceBack -> player.back(state, SystemClock.uptimeMillis())
             ReaderAction.SentenceForward -> player.forward(state)
             is ReaderAction.JumpToPercent -> player.jumpToPercent(state, action.percent)
-            ReaderAction.OpenMenu -> player.pauseNow(state).also { onOpenMenu() }
+            ReaderAction.OpenMenu -> {
+                frozen = state
+                session.menuRow.intValue = 0
+                session.menuOpen = true
+                player.pauseNow(state)
+            }
         }
     }
 
     BackHandler(enabled = state.playing) { state = player.pause(state) }
+    // Registered later, so it wins while the menu is open: BACK closes the menu first.
+    BackHandler(enabled = session.menuOpen) { session.menuOpen = false }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { state = player.pauseNow(state) }
 
     // The speed is global: take it over from the settings when the reader (re)appears.
@@ -150,82 +171,105 @@ fun ReaderScreen(
         onDispose { view.keepScreenOn = false }
     }
 
-    BoxWithConstraints(
-        Modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .focusRequester(focusRequester)
-            .focusable()
-            .onPreviewKeyEvent { event ->
-                val native = event.nativeKeyEvent
-                if (!keys.handles(native.keyCode)) return@onPreviewKeyEvent false
-                val down = event.type == KeyEventType.KeyDown
-                keys.onKey(native.keyCode, down, native.repeatCount, native.eventTime - native.downTime, paused = !state.playing)
-                    ?.let(::perform)
-                true
-            }
-            .readerTouch { gesture -> perform(readerAction(gesture, paused = !state.playing)) }
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(top = 18.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        val wordStyle = RsvpTheme.type.word
-        val measurer = rememberTextMeasurer()
-        val bandWidthPx = constraints.maxWidth.coerceAtMost(with(LocalDensity.current) { MaxContentWidth.roundToPx() })
-        val fitter = remember(measurer, wordStyle, bandWidthPx) { WordFitter(measurer, wordStyle, bandWidthPx) }
-        val currentFitter by rememberUpdatedState(fitter)
+    Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .background(colors.background)
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    val native = event.nativeKeyEvent
+                    if (!keys.handles(native.keyCode)) return@onPreviewKeyEvent false
+                    val down = event.type == KeyEventType.KeyDown
+                    keys.onKey(native.keyCode, down, native.repeatCount, native.eventTime - native.downTime, paused = !state.playing)
+                        ?.let(::perform)
+                    true
+                }
+                // Under the open menu the reader takes no touches (they'd fall through the menu's empty areas).
+                .then(if (session.menuOpen) Modifier else Modifier.readerTouch { gesture -> perform(readerAction(gesture, paused = !state.playing)) })
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(top = 18.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            val wordStyle = RsvpTheme.type.word
+            val measurer = rememberTextMeasurer()
+            val bandWidthPx = constraints.maxWidth.coerceAtMost(with(LocalDensity.current) { MaxContentWidth.roundToPx() })
+            val fitter = remember(measurer, wordStyle, bandWidthPx) { WordFitter(measurer, wordStyle, bandWidthPx) }
+            val currentFitter by rememberUpdatedState(fitter)
 
-        // Playback: show each word (or its pieces) for its duration, on a drift-free clock.
-        LaunchedEffect(state.playing, state.seek) {
-            if (!state.playing) return@LaunchedEffect
-            val seek = state.seek
-            var deadline = SystemClock.uptimeMillis()
-            while (true) {
-                val word = text.words[state.index].text
-                val pieces = currentFitter.split(word)
-                val total = player.durationMs(state)
-                val letters = pieces.sumOf { it.length }.coerceAtLeast(1)
-                for (piece in pieces) {
-                    shownChunk = if (pieces.size > 1) piece else null
-                    deadline += total * piece.length / letters
-                    delay(deadline - SystemClock.uptimeMillis())
+            // Playback: show each word (or its pieces) for its duration, on a drift-free clock.
+            LaunchedEffect(state.playing, state.seek) {
+                if (!state.playing) return@LaunchedEffect
+                val seek = state.seek
+                var deadline = SystemClock.uptimeMillis()
+                while (true) {
+                    val word = text.words[state.index].text
+                    val pieces = currentFitter.split(word)
+                    val total = player.durationMs(state)
+                    val letters = pieces.sumOf { it.length }.coerceAtLeast(1)
+                    for (piece in pieces) {
+                        shownChunk = if (pieces.size > 1) piece else null
+                        deadline += total * piece.length / letters
+                        delay(deadline - SystemClock.uptimeMillis())
+                    }
+                    if (state.seek != seek) break
+                    state = player.advance(state)
+                    if (!state.playing) break
                 }
-                if (state.seek != seek) break
-                state = player.advance(state)
-                if (!state.playing) break
+                shownChunk = null
             }
-            shownChunk = null
-        }
 
-        Column(Modifier.widthIn(max = MaxContentWidth).fillMaxSize()) {
-            Header(text, title, state, speedChanges)
-            BoxWithConstraints(
-                Modifier.weight(1f).fillMaxWidth().padding(vertical = PausedEdgeGap),
-                contentAlignment = Alignment.Center,
-            ) {
-                val type = RsvpTheme.type
-                val gapPx = with(LocalDensity.current) { PausedSentenceGap.roundToPx() }
-                val pageLayout = remember(text, measurer, type, constraints.maxWidth, constraints.maxHeight, gapPx) {
-                    PageLayout(text, measurer, type.pausedSentence, type.pausedNext, constraints.maxWidth, constraints.maxHeight, gapPx)
+            Column(Modifier.widthIn(max = MaxContentWidth).fillMaxSize()) {
+                val shown = frozen ?: state
+                Header(text, title, shown, speedChanges)
+                BoxWithConstraints(
+                    Modifier.weight(1f).fillMaxWidth().padding(vertical = PausedEdgeGap),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val type = RsvpTheme.type
+                    val gapPx = with(LocalDensity.current) { PausedSentenceGap.roundToPx() }
+                    val pageLayout = remember(text, measurer, type, constraints.maxWidth, constraints.maxHeight, gapPx) {
+                        PageLayout(text, measurer, type.pausedSentence, type.pausedNext, constraints.maxWidth, constraints.maxHeight, gapPx)
+                    }
+                    SideEffect { pages.value = pageLayout }
+                    if (shown.playing) {
+                        WordBand(
+                            word = shownChunk ?: text.words.getOrNull(state.index)?.text.orEmpty(),
+                            style = wordStyle,
+                            showGuides = showGuides,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else if (text.size > 0) {
+                        val page = remember(pageLayout, state.index) { state.index to pageLayout.page(state.index) }
+                        // ▲▼ (and ◀▶) scroll the page: the old one moves out while the new one moves in,
+                        // both fully drawn, so there is never an empty or half-faded frame.
+                        AnimatedContent(
+                            targetState = page,
+                            modifier = Modifier.fillMaxSize().clipToBounds(),
+                            transitionSpec = {
+                                val forward = targetState.first > initialState.first
+                                val spec = tween<IntOffset>(PAGE_TURN_MS, easing = FastOutSlowInEasing)
+                                slideInVertically(spec) { h -> if (forward) h else -h }
+                                    .togetherWith(slideOutVertically(spec) { h -> if (forward) -h else h })
+                            },
+                            label = "page",
+                        ) { (_, p) -> PausedText(p, Modifier.fillMaxSize()) }
+                    }
                 }
-                SideEffect { pages.value = pageLayout }
-                if (state.playing) {
-                    WordBand(
-                        word = shownChunk ?: text.words.getOrNull(state.index)?.text.orEmpty(),
-                        style = wordStyle,
-                        showGuides = showGuides,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else if (text.size > 0) {
-                    val page = remember(pageLayout, state.index) { pageLayout.page(state.index) }
-                    PausedText(page, Modifier.fillMaxSize())
-                }
+                Footer(text, shown, showHints)
             }
-            Footer(text, state, showHints)
         }
+        if (session.menuOpen) menu()
     }
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    // Back from the menu (or on first show): the reader takes the keys again and shows its real state.
+    LaunchedEffect(session.menuOpen) {
+        if (!session.menuOpen) {
+            frozen = null
+            runCatching { focusRequester.requestFocus() }
+        }
+    }
 }
 
 @Composable
