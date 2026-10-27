@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 640px; height: 960px; box-sizing: border-box; background: #0E0E0E; color: #EDEDED; font-family: Inter, sans-serif; display: flex; flex-direction: column; padding: 36px 24px 28px">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 0 8px 24px">
+<span style="font-size: 20px; color: #8A8A8A">Pride and Prejudice · 12%</span>
+<h1 style="margin: 0; font-size: 34px; font-weight: 600">Menu</h1>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+<button style="{{it.rowStyle}}">
+<span>{{it.label}}</span>
+<span style="font-size: 20px; color: #8A8A8A">{{it.hint}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 19px; color: #8A8A8A; padding: 16px 8px 0; border-top: 1px solid #222222">
+<span>▲▼ Move</span>
+<span>OK Select</span>
+<span>↩ Back</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+const raw = [
+{ label: 'Continue reading', hint: '' },
+{ label: 'Chapters', hint: '1 of 61' },
+{ label: 'Book info', hint: '' },
+{ label: 'Settings', hint: '' },
+{ label: 'Start from beginning', hint: '' },
+{ label: 'Library', hint: '' }
+];
+const items = raw.map((it, i) => ({
+label: it.label,
+hint: it.hint,
+rowStyle: 'display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; padding: 20px 18px; border: 0; border-radius: 14px; font-family: Inter, sans-serif; font-size: 26px; text-align: left; color: #EDEDED; background: ' + (i === 1 ? '#262626; outline: 3px solid #FF4B3E; outline-offset: -3px; font-weight: 600' : 'transparent; font-weight: 500')
+}));
+return { items };
+}
+}
+</script>
+</body>
+</html>

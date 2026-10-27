@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">my-rsvp</string>
+
+    <!-- Reader -->
+    <string name="reader_wpm">%1$d wpm</string>
+    <string name="reader_paused">Paused</string>
+    <string name="reader_percent">%1$d %%</string>
+    <string name="reader_percent_chapter">%1$d %% · Chapter %2$d of %3$d</string>
+    <string name="reader_time_left_hours">%1$d h %2$d min left</string>
+    <string name="reader_time_left_minutes">%1$d min left</string>
+    <string name="reader_time_left_under_minute">&lt; 1 min left</string>
+    <string name="reader_finished">Finished</string>
+
+    <!-- Key hints (reader) -->
+    <string name="hint_speed">▲▼ Speed</string>
+    <string name="hint_pause">OK Pause</string>
+    <string name="hint_sentence">◀▶ Sentence</string>
+    <string name="hint_resume">OK Resume</string>
+    <string name="hint_page">▲▼ Page</string>
+</resources>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reader – light</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Literata:opsz,wght@7..72,400;7..72,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 640px; height: 960px; box-sizing: border-box; background: #FFFFFF; color: #111111; font-family: Inter, sans-serif; display: flex; flex-direction: column; padding: 36px 32px 28px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 24px; font-weight: 600">Pride and Prejudice</span>
+<span style="font-size: 20px; color: #6B6B6B">Chapter 1</span>
+</div>
+<span style="font-size: 22px; font-weight: 500; color: #6B6B6B">350 wpm</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center">
+<div style="display: grid; grid-template-columns: 236px auto 1fr; border-top: 2px solid #D9D9D9; border-bottom: 2px solid #D9D9D9">
+<div></div>
+<div style="justify-self: center; width: 3px; height: 26px; background: #B5B5B5"></div>
+<div></div>
+<div style="text-align: right; font-family: Literata, serif; font-size: 84px; line-height: 1.3">pos</div>
+<div style="font-family: Literata, serif; font-size: 84px; line-height: 1.3; color: {{focus}}">s</div>
+<div style="text-align: left; font-family: Literata, serif; font-size: 84px; line-height: 1.3">ession</div>
+<div></div>
+<div style="justify-self: center; width: 3px; height: 26px; background: #B5B5B5"></div>
+<div></div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="height: 6px; background: #E6E6E6; border-radius: 3px">
+<div style="width: 12%; height: 6px; background: #6B6B6B; border-radius: 3px"></div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 20px; color: #6B6B6B">
+<span>12% · Chapter 1 of 61</span>
+<span>5 h 6 min left</span>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 19px; color: #6B6B6B; padding-top: 16px; border-top: 1px solid #E6E6E6">
+<span>▲▼ Speed</span>
+<span>OK Pause</span>
+<span>◀▶ Sentence</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"focus":{"editor":"color","default":"#D21F1F","options":["#D21F1F","#B07A12","#1F5FD2"]},"$preview":{"width":640,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+return { focus: this.props.focus ?? '#D21F1F' };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reader – paused</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Literata:opsz,wght@7..72,400;7..72,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 640px; height: 960px; box-sizing: border-box; background: #0E0E0E; color: #EDEDED; font-family: Inter, sans-serif; display: flex; flex-direction: column; padding: 36px 32px 28px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 24px; font-weight: 600">Pride and Prejudice</span>
+<span style="font-size: 20px; color: #8A8A8A">Chapter 1</span>
+</div>
+<span style="font-size: 20px; font-weight: 600; color: #0E0E0E; background: #EDEDED; padding: 6px 14px; border-radius: 999px">Paused</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 28px">
+<p style="margin: 0; font-family: Literata, serif; font-size: 36px; line-height: 1.5; color: #8A8A8A">It is a truth <span style="color: #EDEDED; border-bottom: 3px solid {{focus}}">universally</span> acknowledged, that a single man in possession of a good fortune, must be in want of a wife.</p>
+<p style="margin: 0; font-family: Literata, serif; font-size: 28px; line-height: 1.5; color: #5C5C5C">However little known the feelings or views of such a man may be on his first entering a neighbourhood…</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="height: 6px; background: #2A2A2A; border-radius: 3px">
+<div style="width: 12%; height: 6px; background: #8A8A8A; border-radius: 3px"></div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 20px; color: #8A8A8A">
+<span>12% · Chapter 1 of 61</span>
+<span>350 wpm</span>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 19px; color: #8A8A8A; padding-top: 16px; border-top: 1px solid #222222">
+<span>OK Resume</span>
+<span>◀ Back</span>
+<span>☰ Menu</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"focus":{"editor":"color","default":"#FF4B3E","options":["#FF4B3E","#E8B04A","#4FA3FF"]},"$preview":{"width":640,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+return { focus: this.props.focus ?? '#FF4B3E' };
+}
+}
+</script>
+</body>
+</html>
