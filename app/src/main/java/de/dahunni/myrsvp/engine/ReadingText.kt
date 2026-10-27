@@ -81,6 +81,18 @@ class ReadingText(
     /** Index into [chapters] of the chapter containing [wordIndex], or -1 before the first chapter. */
     fun chapterOf(wordIndex: Int): Int = chapters.indexOfLast { it.wordIndex <= wordIndex }
 
+    /**
+     * Progress 0.0–1.0 within the chapter containing [wordIndex] (the text before the first
+     * chapter counts as one more); null if the text has no chapters.
+     */
+    fun chapterProgress(wordIndex: Int): Float? {
+        if (chapters.isEmpty() || words.isEmpty()) return null
+        val c = chapterOf(wordIndex)
+        val start = if (c < 0) 0 else chapters[c].wordIndex
+        val end = chapters.getOrNull(c + 1)?.wordIndex ?: words.size
+        return ((wordIndex - start).toFloat() / (end - start).coerceAtLeast(1)).coerceIn(0f, 1f)
+    }
+
     /** Progress 0.0–1.0 when the word at [wordIndex] is shown. */
     fun progress(wordIndex: Int): Float = if (words.isEmpty()) 0f else wordIndex.toFloat() / words.size
 

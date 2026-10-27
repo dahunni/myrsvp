@@ -51,6 +51,19 @@ class ReadingTextTest {
     }
 
     @Test
+    fun `chapter progress`() {
+        // 13 words; chapters at 0 and 8.
+        assertEquals(0f, text.chapterProgress(0)!!, 1e-6f)
+        assertEquals(4f / 8, text.chapterProgress(4)!!, 1e-6f)
+        assertEquals(0f, text.chapterProgress(8)!!, 1e-6f)
+        assertEquals(4f / 5, text.chapterProgress(12)!!, 1e-6f)
+        // Before the first chapter, the opening counts as its own part.
+        val late = ReadingText.parse("a b c d", listOf(Chapter("x", 2)))
+        assertEquals(0.5f, late.chapterProgress(1)!!, 1e-6f)
+        assertEquals(null, ReadingText.parse("a b").chapterProgress(1))
+    }
+
+    @Test
     fun `chapters outside the text are dropped and the rest sorted`() {
         val t = ReadingText.parse("a b c", listOf(Chapter("2", 2), Chapter("out", 9), Chapter("1", 0)))
         assertEquals(listOf("1", "2"), t.chapters.map { it.title })

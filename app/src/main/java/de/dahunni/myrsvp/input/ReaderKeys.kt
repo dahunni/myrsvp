@@ -18,6 +18,21 @@ sealed interface ReaderAction {
     data class JumpToPercent(val percent: Int) : ReaderAction
 }
 
+/** The five D-pad directions; touch gestures map onto the same ones (see ReaderGestures.kt). */
+enum class Direction { Up, Down, Left, Right, Center }
+
+/**
+ * What a direction does on the reader, for keys and gestures alike: ▲▼ change the speed while
+ * playing and turn pages while paused, ◀▶ move by sentence, the center plays or pauses.
+ */
+fun readerAction(direction: Direction, paused: Boolean): ReaderAction = when (direction) {
+    Direction.Up -> if (paused) ReaderAction.PageUp else ReaderAction.SpeedUp
+    Direction.Down -> if (paused) ReaderAction.PageDown else ReaderAction.SpeedDown
+    Direction.Left -> ReaderAction.SentenceBack
+    Direction.Right -> ReaderAction.SentenceForward
+    Direction.Center -> ReaderAction.PlayPause
+}
+
 /**
  * Key codes in one place, so they are easy to adjust once the Qin F22 Pro's real codes are known.
  * BACK is not here: it goes through the system back dispatcher (Compose BackHandler), which also
@@ -42,8 +57,8 @@ object KeyCodes {
  * Turns raw key events into [ReaderAction]s. OK acts on release so that holding it can open
  * the menu instead; speed keys repeat while held, the other keys (paging included) don't.
  */
-class ReaderKeyInterpreter(private val longPressMs: Long) {
-    private var okLongPressFired = false
+class ReaderKeyInterpreter(longPressMs: Long) {
+    private val ok = OkKey(longPressMs)
 
     fun handles(keyCode: Int): Boolean = keyCode in KeyCodes.UP || keyCode in KeyCodes.DOWN ||
         keyCode in KeyCodes.OK || keyCode in KeyCodes.LEFT || keyCode in KeyCodes.RIGHT ||
@@ -55,34 +70,56 @@ class ReaderKeyInterpreter(private val longPressMs: Long) {
      * @param paused the reader shows the paused view (▲▼ page instead of changing speed)
      */
     fun onKey(keyCode: Int, down: Boolean, repeatCount: Int, heldMs: Long, paused: Boolean): ReaderAction? {
-        if (keyCode in KeyCodes.OK) return onOk(down, repeatCount, heldMs)
+        if (keyCode in KeyCodes.OK) {
+            return when (ok.onKey(down, repeatCount, heldMs)) {
+                OkPress.Short -> ReaderAction.PlayPause
+                OkPress.Long -> ReaderAction.OpenMenu
+                null -> null
+            }
+        }
         if (!down) return null
-        if (!paused && keyCode in KeyCodes.UP) return ReaderAction.SpeedUp
-        if (!paused && keyCode in KeyCodes.DOWN) return ReaderAction.SpeedDown
-        if (repeatCount > 0) return null
+        val direction = when (keyCode) {
+            in KeyCodes.UP -> Direction.Up
+            in KeyCodes.DOWN -> Direction.Down
+            in KeyCodes.LEFT -> Direction.Left
+            in KeyCodes.RIGHT -> Direction.Right
+            else -> null
+        }
+        // Only the speed repeats while a key is held; a held key never turns more than one page.
+        val repeats = direction == Direction.Up || direction == Direction.Down
+        if (repeatCount > 0 && !(repeats && !paused)) return null
+        if (direction != null) return readerAction(direction, paused)
         return when (keyCode) {
-            in KeyCodes.UP -> ReaderAction.PageUp
-            in KeyCodes.DOWN -> ReaderAction.PageDown
-            in KeyCodes.LEFT -> ReaderAction.SentenceBack
-            in KeyCodes.RIGHT -> ReaderAction.SentenceForward
             in KeyCodes.MENU -> ReaderAction.OpenMenu
             in KeyCodes.DIGITS -> ReaderAction.JumpToPercent(KeyCodes.DIGITS.getValue(keyCode) * 10)
             else -> null
         }
     }
 
-    private fun onOk(down: Boolean, repeatCount: Int, heldMs: Long): ReaderAction? {
+}
+
+enum class OkPress { Short, Long }
+
+/**
+ * OK (center/enter), the same on every screen: a short press acts on release, holding it acts
+ * once as soon as the long-press time is reached (reader: menu; library: the book's menu).
+ */
+class OkKey(private val longPressMs: Long) {
+    private var longPressFired = false
+
+    /** @see ReaderKeyInterpreter.onKey */
+    fun onKey(down: Boolean, repeatCount: Int, heldMs: Long): OkPress? {
         if (down) {
-            if (repeatCount == 0) okLongPressFired = false
-            if (!okLongPressFired && repeatCount > 0 && heldMs >= longPressMs) {
-                okLongPressFired = true
-                return ReaderAction.OpenMenu
+            if (repeatCount == 0) longPressFired = false
+            if (!longPressFired && repeatCount > 0 && heldMs >= longPressMs) {
+                longPressFired = true
+                return OkPress.Long
             }
             return null
         }
-        val wasLongPress = okLongPressFired
-        okLongPressFired = false
-        return if (wasLongPress) null else ReaderAction.PlayPause
+        val wasLongPress = longPressFired
+        longPressFired = false
+        return if (wasLongPress) null else OkPress.Short
     }
 }
 

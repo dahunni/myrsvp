@@ -51,12 +51,17 @@ Map everything in `input/` so Qin keycodes can be adjusted in one place. Add a h
 | DPAD_CENTER / ENTER           | play / pause                   | select           |
 | DPAD_LEFT                     | back a sentence (see above)    | — (Settings: change value) |
 | DPAD_RIGHT                    | next sentence                  | — (Settings: change value) |
-| MENU, or long-press OK        | open Menu                      | —                |
+| MENU, or long-press OK        | open Menu                      | Library: book menu (☰ / hold OK) |
 | BACK                          | pause; if paused → Library     | back             |
 | Number keys 1–9 (paused only) | jump to 10 %…90 % of the book  | —                |
 
-Touch (for normal phones): tap word area = play/pause · swipe up/down = speed · swipe left/right =
-sentence back/forward · long-press = Menu. Lists: normal tap/scroll.
+Touch (for normal phones) mirrors the D-pad exactly, through the same mapping (`input/`): tap = OK,
+a swipe = the arrow in the finger's direction (up = ▲: faster while playing, previous page while paused;
+down = ▼; left = ◀ sentence back; right = ▶ sentence forward), long-press = Menu. Lists: normal tap/scroll,
+long-press = what holding OK does.
+
+**Button rule:** the whole app is 100 % usable with keys alone. Touch only ever adds a second way to do
+something a key already does; nothing is touch-only. Holding OK replaces ☰ on devices without a menu key.
 
 Show a speed change by briefly highlighting the wpm in the header (never over the word). Keep the screen on only while playing.
 

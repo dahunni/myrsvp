@@ -58,7 +58,9 @@ Focus-letter accent (setting "Focus letter"), also used for the focus outline in
     rest starts after it. Centering the letter (not its left edge) keeps it and the ticks still for narrow and wide letters.
   - Ticks: 1.5 × 13 dp (tick color), centered on the focus letter, inside the lines above and below the word.
   - Guide lines + ticks can be turned off in Settings.
-- Footer: progress bar 3 dp (track guideLine, fill textMuted, radius 1.5 dp) → row "12 % · Chapter 1 of 61" left,
+- Footer: progress bar 3 dp (track guideLine, radius 1.5 dp) with two fills across the full width: the book's
+  progress (textMuted) and the current chapter's progress (accent); the longer one is drawn first so both
+  ends always show. Without chapters only the book fill. → row "12 % · Chapter 1 of 61" left,
   "5 h 6 min left" right (meta) → key-hint bar: 0.5 dp divider, 8 dp top padding, three hints spread
   evenly, e.g. "▲▼ Speed · OK Pause · ◀▶ Sentence" (hint). Hide the key-hint bar on devices without a D-pad
   (no `Configuration.NAVIGATION_DPAD`), showing touch hints once on first launch instead.

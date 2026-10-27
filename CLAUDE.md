@@ -42,8 +42,10 @@ de.dahunni.myrsvp
 
 ## Rules
 - `engine/` must be fully unit-tested (ORP index, timing, abbreviations, sentence jumps).
-- Every screen must be fully usable with the D-pad alone. Every focusable item shows a visible
-  focus state (see DESIGN.md). Never rely on touch only.
+- The whole app must be 100 % button-navigable: every screen fully usable with the D-pad alone, every
+  action reachable by a key (holding OK where a ☰ key may be missing). Touch only mirrors keys, never
+  replaces them; reader gestures go through the same direction mapping as the D-pad (`input/`).
+- Every focusable item shows a visible focus state (see DESIGN.md).
 - Keep the screen on while playing; let it sleep when paused.
 - Match DESIGN.md exactly; if something is unclear, follow the mockup markup.
 

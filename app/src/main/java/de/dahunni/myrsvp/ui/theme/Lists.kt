@@ -1,5 +1,6 @@
 package de.dahunni.myrsvp.ui.theme
 
+import android.view.ViewConfiguration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -49,7 +50,10 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import de.dahunni.myrsvp.input.KeyCodes
 import de.dahunni.myrsvp.input.ListKey
+import de.dahunni.myrsvp.input.OkKey
+import de.dahunni.myrsvp.input.OkPress
 import de.dahunni.myrsvp.input.listKey
 
 val MaxContentWidth = 480.dp
@@ -146,6 +150,7 @@ fun FocusRow(
     val focused by interaction.collectIsFocusedAsState()
     val bg by animateColorAsState(if (focused) colors.rowFocused else Color.Transparent, tween(FOCUS_FADE_MS), label = "row")
     val requester = remember { FocusRequester() }
+    val ok = remember { OkKey(ViewConfiguration.getLongPressTimeout().toLong()) }
     if (autoFocus) {
         // Requested from the row itself: in a lazy list the row only exists once it is laid out.
         LaunchedEffect(Unit) { runCatching { requester.requestFocus() } }
@@ -163,7 +168,18 @@ fun FocusRow(
             // Clickables aren't focusable in touch mode by default; the D-pad needs a focused row from the start.
             .focusProperties { canFocus = true }
             .onPreviewKeyEvent { event ->
-                val key = listKey(event.nativeKeyEvent.keyCode) ?: return@onPreviewKeyEvent false
+                val native = event.nativeKeyEvent
+                if (native.keyCode in KeyCodes.OK && onClick != null) {
+                    // Our own OK handling, so holding OK works like a long press on every device.
+                    val press = ok.onKey(event.type == KeyEventType.KeyDown, native.repeatCount, native.eventTime - native.downTime)
+                    when (press) {
+                        OkPress.Short -> onClick()
+                        OkPress.Long -> (onLongClick ?: onClick)()
+                        null -> Unit
+                    }
+                    return@onPreviewKeyEvent true
+                }
+                val key = listKey(native.keyCode) ?: return@onPreviewKeyEvent false
                 val handler = onKey ?: return@onPreviewKeyEvent false
                 if (event.type == KeyEventType.KeyDown) handler(key) else true
             }

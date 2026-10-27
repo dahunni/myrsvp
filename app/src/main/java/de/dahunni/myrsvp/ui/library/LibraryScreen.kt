@@ -97,6 +97,7 @@ fun LibraryScreen(
                 AddBooksRow(
                     importing = importing,
                     onClick = onAddBooks,
+                    onLongClick = { onMenu(null) },
                     autoFocus = books.isEmpty(),
                     modifier = Modifier
                         .padding(top = 5.dp)
@@ -150,6 +151,7 @@ private fun BookRow(book: LibraryBook) {
 private fun AddBooksRow(
     importing: ImportProgress?,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     autoFocus: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -166,6 +168,7 @@ private fun AddBooksRow(
     }
     FocusRow(
         onClick = { if (importing == null) onClick() },
+        onLongClick = onLongClick,
         autoFocus = autoFocus,
         padding = PaddingValues(9.dp),
         background = dashed,

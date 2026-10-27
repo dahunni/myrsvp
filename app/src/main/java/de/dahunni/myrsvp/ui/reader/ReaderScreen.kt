@@ -15,7 +15,6 @@ import androidx.compose.ui.node.Ref
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -52,7 +51,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -71,6 +69,7 @@ import de.dahunni.myrsvp.engine.ReadingText
 import de.dahunni.myrsvp.input.ReaderAction
 import de.dahunni.myrsvp.input.ReaderKeyInterpreter
 import de.dahunni.myrsvp.input.hasKeypad
+import de.dahunni.myrsvp.input.readerAction
 import de.dahunni.myrsvp.data.Settings
 import de.dahunni.myrsvp.ui.ReaderSession
 import de.dahunni.myrsvp.ui.theme.HintBar
@@ -164,7 +163,7 @@ fun ReaderScreen(
                     ?.let(::perform)
                 true
             }
-            .pointerInput(player) { detectTapGestures(onTap = { perform(ReaderAction.PlayPause) }) }
+            .readerTouch { gesture -> perform(readerAction(gesture, paused = !state.playing)) }
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(top = 18.dp, start = 16.dp, end = 16.dp, bottom = 14.dp),
         contentAlignment = Alignment.TopCenter,
@@ -268,7 +267,7 @@ private fun Footer(text: ReadingText, state: PlayerState, showHints: Boolean) {
     val percent = (progress * 100).toInt()
     val chapterIndex = text.chapterOf(state.index)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        ProgressBar(progress)
+        ProgressBar(book = progress, chapter = text.chapterProgress(state.index))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             val left = if (chapterIndex >= 0) {
                 stringResource(R.string.reader_percent_chapter, percent, chapterIndex + 1, text.chapters.size)
@@ -290,8 +289,12 @@ private fun Footer(text: ReadingText, state: PlayerState, showHints: Boolean) {
     }
 }
 
+/**
+ * One bar, two fills across its full width: the book's progress (textMuted) and the current
+ * chapter's progress (accent). The longer fill is drawn first, so both ends always show.
+ */
 @Composable
-private fun ProgressBar(progress: Float) {
+private fun ProgressBar(book: Float, chapter: Float?) {
     val colors = RsvpTheme.colors
     Box(
         Modifier
@@ -300,13 +303,11 @@ private fun ProgressBar(progress: Float) {
             .clip(RoundedCornerShape(1.5.dp))
             .background(colors.guideLine)
             .drawBehind {
-                val w = size.width * progress.coerceIn(0f, 1f)
-                if (w > 0f) {
-                    drawRoundRect(
-                        colors.textMuted,
-                        size = size.copy(width = w),
-                        cornerRadius = CornerRadius(1.5.dp.toPx()),
-                    )
+                val fills = listOfNotNull(book to colors.textMuted, chapter?.let { it to colors.accent })
+                    .sortedByDescending { it.first }
+                for ((fraction, color) in fills) {
+                    val w = size.width * fraction.coerceIn(0f, 1f)
+                    if (w > 0f) drawRoundRect(color, size = size.copy(width = w), cornerRadius = CornerRadius(1.5.dp.toPx()))
                 }
             },
     )
